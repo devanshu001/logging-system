@@ -1,0 +1,67 @@
+
+services:
+  db:
+    image: postgres:13
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    restart: always
+    environment:
+      POSTGRES_DB: logs
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+
+
+  redis:
+    image: redis:latest
+    container_name: redis_queue
+    restart: always
+
+  api:
+    build: .
+    command: python server.py
+    volumes:
+      - .:/app
+    container_name: fastapi_logs
+    restart: always
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres_db:5432/
+      REDIS_HOST: redis_queue
+      REDIS_PORT: 6379
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: .
+    container_name: rq_worker
+    command: python worker.py
+    volumes:
+      - .:/app
+    restart: always
+    depends_on:
+      - redis
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres_db:5432/
+      REDIS_HOST: redis_queue
+      REDIS_PORT: 6379
+
+  test:
+    build: .
+    volumes:
+      - .:/app
+    container_name: test_runner
+    depends_on:
+      - redis
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres_db:5432/
+      REDIS_HOST: redis_queue
+      REDIS_PORT: 6379
+    command: pytest app/tests/
+
+volumes:
+      postgres_data:
