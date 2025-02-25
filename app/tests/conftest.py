@@ -13,7 +13,6 @@ main_engine = create_engine(os.getenv('DATABASE_URL'), isolation_level="AUTOCOMM
 
 
 def create_test_database():
-    # with main_engine.connect() as conn:
     with main_engine.connect() as conn:
         result = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = 'test_logs_db';"))
         if not result.scalar():  # If no result, database doesn't exist
@@ -32,8 +31,6 @@ TEST_REDIS_DB = 1  # Use a separate Redis database for testing
 # Create Redis test connection
 test_redis_conn = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=TEST_REDIS_DB)
 
-
-# test_redis_conn = redis.Redis(host='localhost', port=6379,db=TEST_REDIS_DB)
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_database():
